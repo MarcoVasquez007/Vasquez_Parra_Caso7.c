@@ -26,3 +26,19 @@ static void leerTexto(const char *mensaje, char *destino, int tamano) {
             clearerr(stdin);
             continue;
         }
+        if (strchr(destino, '\n') == NULL) {
+            while ((caracter = getchar()) != '\n' && caracter != EOF) {
+            }
+        }
+
+        quitarSalto(destino);
+
+        if (destino[0] == '\0') {
+            printf("La entrada no puede estar vacia.\n");
+        } else if (strchr(destino, ',') != NULL) {
+            printf("No use comas porque los datos se guardan en CSV.\n");
+        } else {
+            return;
+        }
+    }
+}
