@@ -42,3 +42,77 @@ static void leerTexto(const char *mensaje, char *destino, int tamano) {
         }
     }
 }
+int leerEntero(const char *mensaje, int minimo, int maximo) {
+    char linea[80];
+    char *fin;
+    long valor;
+
+    while (1) {
+        printf("%s", mensaje);
+
+        if (fgets(linea, sizeof(linea), stdin) == NULL) {
+            clearerr(stdin);
+            continue;
+        }
+
+        valor = strtol(linea, &fin, 10);
+        while (isspace((unsigned char)*fin)) {
+            fin++;
+        }
+
+        if (fin != linea && *fin == '\0' && valor >= minimo && valor <= maximo) {
+            return (int)valor;
+        }
+
+        printf("Ingrese un numero entre %d y %d.\n", minimo, maximo);
+    }
+}
+
+static float leerFloat(const char *mensaje, float minimo, float maximo, int incluyeMinimo) {
+    char linea[80];
+    char *fin;
+    float valor;
+    int minimoValido;
+
+    while (1) {
+        printf("%s", mensaje);
+
+        if (fgets(linea, sizeof(linea), stdin) == NULL) {
+            clearerr(stdin);
+            continue;
+        }
+
+        valor = strtof(linea, &fin);
+        while (isspace((unsigned char)*fin)) {
+            fin++;
+        }
+
+        minimoValido = incluyeMinimo ? valor >= minimo : valor > minimo;
+
+        if (fin != linea && *fin == '\0' && minimoValido && valor <= maximo) {
+            return valor;
+        }
+
+        printf("Valor invalido.\n");
+    }
+}
+
+int confirmar(const char *mensaje) {
+    char respuesta[10];
+
+    while (1) {
+        printf("%s (s/n): ", mensaje);
+
+        if (fgets(respuesta, sizeof(respuesta), stdin) == NULL) {
+            clearerr(stdin);
+            continue;
+        }
+
+        if (respuesta[0] == 's' || respuesta[0] == 'S') {
+            return 1;
+        }
+        if (respuesta[0] == 'n' || respuesta[0] == 'N') {
+            return 0;
+        }
+    }
+}
