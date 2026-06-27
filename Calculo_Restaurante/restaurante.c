@@ -116,3 +116,100 @@ int confirmar(const char *mensaje) {
         }
     }
 }
+void pausar(void) {
+    char linea[4];
+    printf("Presione ENTER para continuar...");
+    fgets(linea, sizeof(linea), stdin);
+}
+
+/* ---------- Busquedas ---------- */
+
+static int contieneTexto(const char *texto, const char *busqueda) {
+    char copiaTexto[MAX_NOMBRE];
+    char copiaBusqueda[MAX_NOMBRE];
+    int i;
+
+    snprintf(copiaTexto, sizeof(copiaTexto), "%s", texto);
+    snprintf(copiaBusqueda, sizeof(copiaBusqueda), "%s", busqueda);
+
+    for (i = 0; copiaTexto[i] != '\0'; i++) {
+        copiaTexto[i] = (char)tolower((unsigned char)copiaTexto[i]);
+    }
+    for (i = 0; copiaBusqueda[i] != '\0'; i++) {
+        copiaBusqueda[i] = (char)tolower((unsigned char)copiaBusqueda[i]);
+    }
+
+    return strstr(copiaTexto, copiaBusqueda) != NULL;
+}
+
+static int buscarIngrediente(const Sistema *sistema, const char *codigo) {
+    int i;
+    for (i = 0; i < sistema->totalIngredientes; i++) {
+        if (strcmp(sistema->ingredientes[i].codigo, codigo) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int buscarPlato(const Sistema *sistema, const char *codigo) {
+    int i;
+    for (i = 0; i < sistema->totalPlatos; i++) {
+        if (strcmp(sistema->platos[i].codigo, codigo) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int buscarRelacion(const Sistema *sistema, const char *codigoPlato, const char *codigoIngrediente) {
+    int i;
+    for (i = 0; i < sistema->totalRelaciones; i++) {
+        if (strcmp(sistema->relaciones[i].codigoPlato, codigoPlato) == 0 &&
+            strcmp(sistema->relaciones[i].codigoIngrediente, codigoIngrediente) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int ingredienteEnUso(const Sistema *sistema, const char *codigo) {
+    int i;
+    for (i = 0; i < sistema->totalRelaciones; i++) {
+        if (strcmp(sistema->relaciones[i].codigoIngrediente, codigo) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* ---------- Calculos ---------- */
+
+static float costoIngredientes(const Sistema *sistema, const char *codigoPlato) {
+    float total = 0.0f;
+    int i;
+
+    for (i = 0; i < sistema->totalRelaciones; i++) {
+        if (strcmp(sistema->relaciones[i].codigoPlato, codigoPlato) == 0) {
+            int pos = buscarIngrediente(sistema, sistema->relaciones[i].codigoIngrediente);
+            if (pos >= 0) {
+                total += sistema->ingredientes[pos].costoUnitario *
+                         sistema->relaciones[i].cantidadUsada;
+            }
+        }
+    }
+
+    return total;
+}
+
+static float costoFinal(const Sistema *sistema, const Plato *plato) {
+    float base = costoIngredientes(sistema, plato->codigo);
+    float porcentajes = plato->impuesto + plato->servicio + plato->ganancia;
+    return base + base * porcentajes / 100.0f;
+}
+
+/* ---------- Archivos CSV ---------- */
+
+void inicializarSistema(Sistema *sistema) {
+    memset(sistema, 0, sizeof(*sistema));
+}
