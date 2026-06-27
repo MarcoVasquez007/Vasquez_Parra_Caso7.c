@@ -581,3 +581,215 @@ static void eliminarPlato(Sistema *sistema) {
 
     printf("Plato eliminado.\n");
 }
+void menuPlatos(Sistema *sistema) {
+    int opcion;
+
+    do {
+        printf("\n--- PLATOS ---\n");
+        printf("1. Registrar\n2. Listar\n3. Buscar\n4. Actualizar\n5. Eliminar\n0. Volver\n");
+        opcion = leerEntero("Opcion: ", 0, 5);
+
+        switch (opcion) {
+            case 1: registrarPlato(sistema); break;
+            case 2: listarPlatos(sistema); break;
+            case 3: buscarPlatoMenu(sistema); break;
+            case 4: actualizarPlato(sistema); break;
+            case 5: eliminarPlato(sistema); break;
+        }
+
+        if (opcion != 0) {
+            pausar();
+        }
+    } while (opcion != 0);
+}
+
+/* ---------- Ingredientes por plato ---------- */
+
+static void asociarIngrediente(Sistema *sistema) {
+    PlatoIngrediente nueva;
+
+    if (sistema->totalRelaciones >= MAX_RELACIONES) {
+        printf("Limite de relaciones alcanzado.\n");
+        return;
+    }
+
+    leerTexto("Codigo del plato: ", nueva.codigoPlato, sizeof(nueva.codigoPlato));
+    if (buscarPlato(sistema, nueva.codigoPlato) < 0) {
+        printf("El plato no existe.\n");
+        return;
+    }
+
+    leerTexto("Codigo del ingrediente: ", nueva.codigoIngrediente,
+              sizeof(nueva.codigoIngrediente));
+    if (buscarIngrediente(sistema, nueva.codigoIngrediente) < 0) {
+        printf("El ingrediente no existe.\n");
+        return;
+    }
+
+    if (buscarRelacion(sistema, nueva.codigoPlato, nueva.codigoIngrediente) >= 0) {
+        printf("La relacion ya existe.\n");
+        return;
+    }
+
+    nueva.cantidadUsada = leerFloat("Cantidad usada (> 0): ", 0, COSTO_MAXIMO, 0);
+    sistema->relaciones[sistema->totalRelaciones++] = nueva;
+
+    printf("Ingrediente asociado al plato.\n");
+}
+
+static void listarIngredientesDePlato(const Sistema *sistema) {
+    char codigoPlato[MAX_CODIGO];
+    float total = 0.0f;
+    int encontrados = 0;
+    int i;
+
+    leerTexto("Codigo del plato: ", codigoPlato, sizeof(codigoPlato));
+
+    if (buscarPlato(sistema, codigoPlato) < 0) {
+        printf("El plato no existe.\n");
+        return;
+    }
+
+    for (i = 0; i < sistema->totalRelaciones; i++) {
+        if (strcmp(sistema->relaciones[i].codigoPlato, codigoPlato) == 0) {
+            int pos = buscarIngrediente(sistema, sistema->relaciones[i].codigoIngrediente);
+            if (pos >= 0) {
+                float parcial = sistema->ingredientes[pos].costoUnitario *
+                                sistema->relaciones[i].cantidadUsada;
+
+                printf("%s | %s | Cantidad: %.2f | Parcial: $%.2f\n",
+                       sistema->ingredientes[pos].codigo,
+                       sistema->ingredientes[pos].nombre,
+                       sistema->relaciones[i].cantidadUsada,
+                       parcial);
+
+                total += parcial;
+                encontrados++;
+            }
+        }
+    }
+
+    if (encontrados == 0) {
+        printf("El plato no tiene ingredientes asociados.\n");
+    } else {
+        printf("Costo total de ingredientes: $%.2f\n", total);
+    }
+}
+
+static void actualizarCantidad(Sistema *sistema) {
+    char codigoPlato[MAX_CODIGO];
+    char codigoIngrediente[MAX_CODIGO];
+    int pos;
+
+    leerTexto("Codigo del plato: ", codigoPlato, sizeof(codigoPlato));
+    leerTexto("Codigo del ingrediente: ", codigoIngrediente, sizeof(codigoIngrediente));
+
+    pos = buscarRelacion(sistema, codigoPlato, codigoIngrediente);
+    if (pos < 0) {
+        printf("La relacion no existe.\n");
+        return;
+    }
+
+    sistema->relaciones[pos].cantidadUsada =
+        leerFloat("Nueva cantidad (> 0): ", 0, COSTO_MAXIMO, 0);
+
+    printf("Cantidad actualizada.\n");
+}
+
+static void eliminarRelacion(Sistema *sistema) {
+    char codigoPlato[MAX_CODIGO];
+    char codigoIngrediente[MAX_CODIGO];
+    int pos;
+    int i;
+
+    leerTexto("Codigo del plato: ", codigoPlato, sizeof(codigoPlato));
+    leerTexto("Codigo del ingrediente: ", codigoIngrediente, sizeof(codigoIngrediente));
+
+    pos = buscarRelacion(sistema, codigoPlato, codigoIngrediente);
+    if (pos < 0) {
+        printf("La relacion no existe.\n");
+        return;
+    }
+
+    if (!confirmar("Quitar ingrediente del plato")) {
+        return;
+    }
+
+    for (i = pos; i < sistema->totalRelaciones - 1; i++) {
+        sistema->relaciones[i] = sistema->relaciones[i + 1];
+    }
+    sistema->totalRelaciones--;
+
+    printf("Relacion eliminada.\n");
+}
+
+void menuRelaciones(Sistema *sistema) {
+    int opcion;
+
+    do {
+        printf("\n--- INGREDIENTES POR PLATO ---\n");
+        printf("1. Asociar\n2. Listar\n3. Actualizar cantidad\n4. Quitar\n0. Volver\n");
+        opcion = leerEntero("Opcion: ", 0, 4);
+
+        switch (opcion) {
+            case 1: asociarIngrediente(sistema); break;
+            case 2: listarIngredientesDePlato(sistema); break;
+            case 3: actualizarCantidad(sistema); break;
+            case 4: eliminarRelacion(sistema); break;
+        }
+
+        if (opcion != 0) {
+            pausar();
+        }
+    } while (opcion != 0);
+}
+
+/* ---------- Reportes ---------- */
+
+static void detalleCosto(const Sistema *sistema) {
+    char codigo[MAX_CODIGO];
+    int pos;
+    float base;
+    float impuesto;
+    float servicio;
+    float ganancia;
+
+    leerTexto("Codigo del plato: ", codigo, sizeof(codigo));
+    pos = buscarPlato(sistema, codigo);
+
+    if (pos < 0) {
+        printf("Plato no encontrado.\n");
+        return;
+    }
+
+    base = costoIngredientes(sistema, codigo);
+    impuesto = base * sistema->platos[pos].impuesto / 100.0f;
+    servicio = base * sistema->platos[pos].servicio / 100.0f;
+    ganancia = base * sistema->platos[pos].ganancia / 100.0f;
+
+    printf("\nPlato: %s\n", sistema->platos[pos].nombre);
+    printf("Costo de ingredientes: $%.2f\n", base);
+    printf("Impuesto: $%.2f\n", impuesto);
+    printf("Servicio: $%.2f\n", servicio);
+    printf("Ganancia: $%.2f\n", ganancia);
+    printf("COSTO FINAL: $%.2f\n", base + impuesto + servicio + ganancia);
+}
+
+void menuReportes(const Sistema *sistema) {
+    int opcion;
+
+    do {
+        printf("\n--- CALCULOS Y REPORTES ---\n");
+        printf("1. Detalle de un plato\n2. Reporte general\n0. Volver\n");
+        opcion = leerEntero("Opcion: ", 0, 2);
+
+        switch (opcion) {
+            case 1: detalleCosto(sistema); break;
+            case 2: listarPlatos(sistema); break;
+        }
+
+        if (opcion != 0) {
+            pausar();
+        }
+    } while (opcion != 0);
+}
