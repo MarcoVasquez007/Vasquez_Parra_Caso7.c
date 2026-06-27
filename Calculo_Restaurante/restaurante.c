@@ -115,8 +115,6 @@ int confirmar(const char *mensaje) {
             return 0;
         }
     }
-<<<<<<< HEAD
-=======
 }
 void pausar(void) {
     char linea[4];
@@ -214,7 +212,6 @@ static float costoFinal(const Sistema *sistema, const Plato *plato) {
 
 void inicializarSistema(Sistema *sistema) {
     memset(sistema, 0, sizeof(*sistema));
->>>>>>> e58e9a1fca5f8796a5c2ac4c20110f7736478e60
 }
 void cargarDatos(Sistema *sistema) {
     FILE *archivo;
@@ -396,4 +393,191 @@ static void actualizarIngrediente(Sistema *sistema) {
               sizeof(sistema->ingredientes[pos].unidadMedida));
 
     printf("Ingrediente actualizado.\n");
+}
+static void eliminarIngrediente(Sistema *sistema) {
+    char codigo[MAX_CODIGO];
+    int pos;
+    int i;
+
+    leerTexto("Codigo del ingrediente: ", codigo, sizeof(codigo));
+    pos = buscarIngrediente(sistema, codigo);
+
+    if (pos < 0) {
+        printf("Ingrediente no encontrado.\n");
+        return;
+    }
+
+    if (ingredienteEnUso(sistema, codigo)) {
+        printf("No se puede eliminar porque esta asociado a un plato.\n");
+        return;
+    }
+
+    if (!confirmar("Confirma la eliminacion")) {
+        return;
+    }
+
+    for (i = pos; i < sistema->totalIngredientes - 1; i++) {
+        sistema->ingredientes[i] = sistema->ingredientes[i + 1];
+    }
+    sistema->totalIngredientes--;
+
+    printf("Ingrediente eliminado.\n");
+}
+
+void menuIngredientes(Sistema *sistema) {
+    int opcion;
+
+    do {
+        printf("\n--- INGREDIENTES ---\n");
+        printf("1. Registrar\n2. Listar\n3. Buscar\n4. Actualizar\n5. Eliminar\n0. Volver\n");
+        opcion = leerEntero("Opcion: ", 0, 5);
+
+        switch (opcion) {
+            case 1: registrarIngrediente(sistema); break;
+            case 2: listarIngredientes(sistema); break;
+            case 3: buscarIngredienteMenu(sistema); break;
+            case 4: actualizarIngrediente(sistema); break;
+            case 5: eliminarIngrediente(sistema); break;
+        }
+
+        if (opcion != 0) {
+            pausar();
+        }
+    } while (opcion != 0);
+}
+
+/* ---------- Platos ---------- */
+
+static void registrarPlato(Sistema *sistema) {
+    Plato nuevo;
+
+    if (sistema->totalPlatos >= MAX_PLATOS) {
+        printf("Limite de platos alcanzado.\n");
+        return;
+    }
+
+    leerTexto("Codigo: ", nuevo.codigo, sizeof(nuevo.codigo));
+    if (buscarPlato(sistema, nuevo.codigo) >= 0) {
+        printf("Ese codigo ya existe.\n");
+        return;
+    }
+
+    leerTexto("Nombre: ", nuevo.nombre, sizeof(nuevo.nombre));
+    leerTexto("Categoria: ", nuevo.categoria, sizeof(nuevo.categoria));
+    nuevo.impuesto = leerFloat("Impuesto (0 a 99): ", 0, 99, 1);
+    nuevo.servicio = leerFloat("Servicio (0 a 99): ", 0, 99, 1);
+    nuevo.ganancia = leerFloat("Ganancia (0 a 99): ", 0, 99, 1);
+
+    sistema->platos[sistema->totalPlatos++] = nuevo;
+    printf("Plato registrado.\n");
+}
+
+static void mostrarPlato(const Sistema *sistema, int i) {
+    float base = costoIngredientes(sistema, sistema->platos[i].codigo);
+
+    printf("%s | %s | %s | Base: $%.2f | Final: $%.2f",
+           sistema->platos[i].codigo,
+           sistema->platos[i].nombre,
+           sistema->platos[i].categoria,
+           base,
+           costoFinal(sistema, &sistema->platos[i]));
+
+    if (base == 0) {
+        printf(" | ALERTA: sin ingredientes");
+    }
+    printf("\n");
+}
+
+static void listarPlatos(const Sistema *sistema) {
+    int i;
+
+    if (sistema->totalPlatos == 0) {
+        printf("No hay platos.\n");
+        return;
+    }
+
+    for (i = 0; i < sistema->totalPlatos; i++) {
+        mostrarPlato(sistema, i);
+    }
+}
+
+static void buscarPlatoMenu(const Sistema *sistema) {
+    char busqueda[MAX_NOMBRE];
+    int i;
+    int encontrados = 0;
+
+    leerTexto("Codigo o parte del nombre: ", busqueda, sizeof(busqueda));
+
+    for (i = 0; i < sistema->totalPlatos; i++) {
+        if (strcmp(sistema->platos[i].codigo, busqueda) == 0 ||
+            contieneTexto(sistema->platos[i].nombre, busqueda)) {
+            mostrarPlato(sistema, i);
+            encontrados++;
+        }
+    }
+
+    if (encontrados == 0) {
+        printf("No encontrado.\n");
+    }
+}
+
+static void actualizarPlato(Sistema *sistema) {
+    char codigo[MAX_CODIGO];
+    int pos;
+
+    leerTexto("Codigo del plato: ", codigo, sizeof(codigo));
+    pos = buscarPlato(sistema, codigo);
+
+    if (pos < 0) {
+        printf("Plato no encontrado.\n");
+        return;
+    }
+
+    leerTexto("Nuevo nombre: ", sistema->platos[pos].nombre,
+              sizeof(sistema->platos[pos].nombre));
+    leerTexto("Nueva categoria: ", sistema->platos[pos].categoria,
+              sizeof(sistema->platos[pos].categoria));
+    sistema->platos[pos].impuesto = leerFloat("Nuevo impuesto: ", 0, 99, 1);
+    sistema->platos[pos].servicio = leerFloat("Nuevo servicio: ", 0, 99, 1);
+    sistema->platos[pos].ganancia = leerFloat("Nueva ganancia: ", 0, 99, 1);
+
+    printf("Plato actualizado.\n");
+}
+
+static void eliminarPlato(Sistema *sistema) {
+    char codigo[MAX_CODIGO];
+    int pos;
+    int i;
+
+    leerTexto("Codigo del plato: ", codigo, sizeof(codigo));
+    pos = buscarPlato(sistema, codigo);
+
+    if (pos < 0) {
+        printf("Plato no encontrado.\n");
+        return;
+    }
+
+    if (!confirmar("Eliminar plato y sus relaciones")) {
+        return;
+    }
+
+    i = 0;
+    while (i < sistema->totalRelaciones) {
+        if (strcmp(sistema->relaciones[i].codigoPlato, codigo) == 0) {
+            int j;
+            for (j = i; j < sistema->totalRelaciones - 1; j++) {
+                sistema->relaciones[j] = sistema->relaciones[j + 1];
+            }
+            sistema->totalRelaciones--;
+        } else {
+            i++;
+        }
+    }
+
+    for (i = pos; i < sistema->totalPlatos - 1; i++) {
+        sistema->platos[i] = sistema->platos[i + 1];
+    }
+    sistema->totalPlatos--;
+
+    printf("Plato eliminado.\n");
 }
