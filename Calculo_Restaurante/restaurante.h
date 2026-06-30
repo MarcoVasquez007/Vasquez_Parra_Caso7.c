@@ -31,3 +31,16 @@ typedef struct {
     char codigoIngrediente[MAX_CODIGO];
     float cantidadUsada;
 } PlatoIngrediente;
+typedef struct {
+    Ingrediente ingredientes[MAX_INGREDIENTES];
+    Plato platos[MAX_PLATOS];
+    PlatoIngrediente relaciones[MAX_RELACIONES];
+    int totalIngredientes;
+    int totalPlatos;
+    int totalRelaciones;
+} Sistema;
+
+/* Inicializacion y persistencia. */
+void inicializarSistema(Sistema *sistema);
+void cargarDatos(Sistema *sistema);
+void guardarDatos(const Sistema *sistema);
