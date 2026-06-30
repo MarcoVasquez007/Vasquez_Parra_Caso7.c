@@ -9,6 +9,7 @@
 #define ARCHIVO_PLATOS "platos.csv"
 #define ARCHIVO_RELACIONES "plato_ingredientes.csv"
 #define MAX_LINEA 256
+#define COSTO_MAXIMO 1000000
 
 /* ---------- Entrada segura ---------- */
 
