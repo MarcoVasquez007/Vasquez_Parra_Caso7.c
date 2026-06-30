@@ -16,3 +16,18 @@ typedef struct {
     float costoUnitario;
     char unidadMedida[MAX_TEXTO];
 } Ingrediente;
+/* Modelos de datos usados por el programa. */
+typedef struct {
+    char codigo[MAX_CODIGO];
+    char nombre[MAX_NOMBRE];
+    char categoria[MAX_TEXTO];
+    float impuesto;
+    float servicio;
+    float ganancia;
+} Plato;
+
+typedef struct {
+    char codigoPlato[MAX_CODIGO];
+    char codigoIngrediente[MAX_CODIGO];
+    float cantidadUsada;
+} PlatoIngrediente;
