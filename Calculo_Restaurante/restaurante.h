@@ -44,3 +44,15 @@ typedef struct {
 void inicializarSistema(Sistema *sistema);
 void cargarDatos(Sistema *sistema);
 void guardarDatos(const Sistema *sistema);
+/* Menus principales de gestion. */
+void menuIngredientes(Sistema *sistema);
+void menuPlatos(Sistema *sistema);
+void menuRelaciones(Sistema *sistema);
+void menuReportes(const Sistema *sistema);
+
+/* Utilidades de entrada. */
+int leerEntero(const char *mensaje, int minimo, int maximo);
+int confirmar(const char *mensaje);
+void pausar(void);
+
+#endif
