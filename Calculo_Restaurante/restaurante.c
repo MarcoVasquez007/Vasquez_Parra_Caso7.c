@@ -5,12 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARCHIVO_INGREDIENTES "ingredientes.csv"
-#define ARCHIVO_PLATOS "platos.csv"
-#define ARCHIVO_RELACIONES "plato_ingredientes.csv"
+#define ARCHIVO_DATOS "archivosguardados.csv"
 #define MAX_LINEA 256
 #define COSTO_MAXIMO 1000000
-
+    
 /* ---------- Entrada segura ---------- */
 
 static void quitarSalto(char *texto) {
@@ -218,46 +216,41 @@ void cargarDatos(Sistema *sistema) {
     FILE *archivo;
     char linea[MAX_LINEA];
 
-    archivo = fopen(ARCHIVO_INGREDIENTES, "r");
+    /* Carga todos los datos desde el archivo CSV unificado. */
+    archivo = fopen(ARCHIVO_DATOS, "r");
     if (archivo != NULL) {
-        fgets(linea, sizeof(linea), archivo);
-        while (sistema->totalIngredientes < MAX_INGREDIENTES &&
-               fgets(linea, sizeof(linea), archivo) != NULL) {
-            Ingrediente *x = &sistema->ingredientes[sistema->totalIngredientes];
-            if (sscanf(linea, "%19[^,],%59[^,],%f,%39[^\r\n]",
-                       x->codigo, x->nombre, &x->costoUnitario, x->unidadMedida) == 4 &&
-                x->costoUnitario > 0) {
-                sistema->totalIngredientes++;
-            }
-        }
-        fclose(archivo);
-    }
-
-    archivo = fopen(ARCHIVO_PLATOS, "r");
-    if (archivo != NULL) {
-        fgets(linea, sizeof(linea), archivo);
-        while (sistema->totalPlatos < MAX_PLATOS &&
-               fgets(linea, sizeof(linea), archivo) != NULL) {
-            Plato *x = &sistema->platos[sistema->totalPlatos];
-            if (sscanf(linea, "%19[^,],%59[^,],%39[^,],%f,%f,%f",
-                       x->codigo, x->nombre, x->categoria,
-                       &x->impuesto, &x->servicio, &x->ganancia) == 6) {
-                sistema->totalPlatos++;
-            }
-        }
-        fclose(archivo);
-    }
-
-    archivo = fopen(ARCHIVO_RELACIONES, "r");
-    if (archivo != NULL) {
-        fgets(linea, sizeof(linea), archivo);
-        while (sistema->totalRelaciones < MAX_RELACIONES &&
-               fgets(linea, sizeof(linea), archivo) != NULL) {
-            PlatoIngrediente *x = &sistema->relaciones[sistema->totalRelaciones];
-            if (sscanf(linea, "%19[^,],%19[^,],%f",
-                       x->codigoPlato, x->codigoIngrediente, &x->cantidadUsada) == 3 &&
-                x->cantidadUsada > 0) {
-                sistema->totalRelaciones++;
+        while (fgets(linea, sizeof(linea), archivo) != NULL) {
+            if (strncmp(linea, "ING,", 4) == 0 &&
+                sistema->totalIngredientes < MAX_INGREDIENTES) {
+                Ingrediente *ingrediente = &sistema->ingredientes[sistema->totalIngredientes];
+                if (sscanf(linea, "ING,%19[^,],%59[^,],%f,%39[^\r\n]",
+                           ingrediente->codigo,
+                           ingrediente->nombre,
+                           &ingrediente->costoUnitario,
+                           ingrediente->unidadMedida) == 4) {
+                    sistema->totalIngredientes++;
+                }
+            } else if (strncmp(linea, "PLA,", 4) == 0 &&
+                       sistema->totalPlatos < MAX_PLATOS) {
+                Plato *plato = &sistema->platos[sistema->totalPlatos];
+                if (sscanf(linea, "PLA,%19[^,],%59[^,],%39[^,],%f,%f,%f",
+                           plato->codigo,
+                           plato->nombre,
+                           plato->categoria,
+                           &plato->impuesto,
+                           &plato->servicio,
+                           &plato->ganancia) == 6) {
+                    sistema->totalPlatos++;
+                }
+            } else if (strncmp(linea, "REL,", 4) == 0 &&
+                       sistema->totalRelaciones < MAX_RELACIONES) {
+                PlatoIngrediente *relacion = &sistema->relaciones[sistema->totalRelaciones];
+                if (sscanf(linea, "REL,%19[^,],%19[^,],%f",
+                           relacion->codigoPlato,
+                           relacion->codigoIngrediente,
+                           &relacion->cantidadUsada) == 3) {
+                    sistema->totalRelaciones++;
+                }
             }
         }
         fclose(archivo);
@@ -268,24 +261,17 @@ void guardarDatos(const Sistema *sistema) {
     FILE *archivo;
     int i;
 
-    archivo = fopen(ARCHIVO_INGREDIENTES, "w");
+    archivo = fopen(ARCHIVO_DATOS, "w");
     if (archivo != NULL) {
-        fprintf(archivo, "codigo_ing,nombre_ing,costo_unitario,unidad_medida\n");
         for (i = 0; i < sistema->totalIngredientes; i++) {
-            fprintf(archivo, "%s,%s,%.2f,%s\n",
+            fprintf(archivo, "ING,%s,%s,%.2f,%s\n",
                     sistema->ingredientes[i].codigo,
                     sistema->ingredientes[i].nombre,
                     sistema->ingredientes[i].costoUnitario,
                     sistema->ingredientes[i].unidadMedida);
         }
-        fclose(archivo);
-    }
-
-    archivo = fopen(ARCHIVO_PLATOS, "w");
-    if (archivo != NULL) {
-        fprintf(archivo, "codigo_plato,nombre_plato,categoria,impuesto_porcentaje,servicio_porcentaje,ganancia_porcentaje\n");
         for (i = 0; i < sistema->totalPlatos; i++) {
-            fprintf(archivo, "%s,%s,%s,%.2f,%.2f,%.2f\n",
+            fprintf(archivo, "PLA,%s,%s,%s,%.2f,%.2f,%.2f\n",
                     sistema->platos[i].codigo,
                     sistema->platos[i].nombre,
                     sistema->platos[i].categoria,
@@ -293,14 +279,8 @@ void guardarDatos(const Sistema *sistema) {
                     sistema->platos[i].servicio,
                     sistema->platos[i].ganancia);
         }
-        fclose(archivo);
-    }
-
-    archivo = fopen(ARCHIVO_RELACIONES, "w");
-    if (archivo != NULL) {
-        fprintf(archivo, "codigo_plato,codigo_ing,cantidad_usada\n");
         for (i = 0; i < sistema->totalRelaciones; i++) {
-            fprintf(archivo, "%s,%s,%.2f\n",
+            fprintf(archivo, "REL,%s,%s,%.2f\n",
                     sistema->relaciones[i].codigoPlato,
                     sistema->relaciones[i].codigoIngrediente,
                     sistema->relaciones[i].cantidadUsada);
